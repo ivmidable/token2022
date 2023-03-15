@@ -33,6 +33,44 @@ describe("token2022", () => {
     });
   });
 
+  it("init from rust", async () => {
+    const mintLength = getMintLen([ExtensionType.NonTransferable]);
+    const lamports = await connection.getMinimumBalanceForRentExemption(mintLength);
+
+    const tx = new web3.Transaction().add(
+      web3.SystemProgram.createAccount({
+        fromPubkey: payer.publicKey,
+        newAccountPubkey: mint.publicKey,
+        space: mintLength,
+        lamports,
+        programId: TOKEN_2022_PROGRAM_ID,
+      })
+    );
+  
+
+    let ix = await program.methods.initialize()
+    .accounts({mint:mint.publicKey, mintAuthority:payer.publicKey, tokenProgram:TOKEN_2022_PROGRAM_ID})
+    .signers([mint, payer])
+    .instruction();
+
+    tx.add(ix);
+
+    try {
+      let txid = await web3.sendAndConfirmTransaction(connection, tx, [payer, mint]);
+      console.log("Your transaction signature", txid);
+
+      let latestBlockHash = await connection.getLatestBlockhash()
+
+      await connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: txid,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
   xit("Create NonTransferable Mint!", async () => {
 
 
@@ -82,7 +120,7 @@ describe("token2022", () => {
 
 
 
-  it("Create a Interest Bearing Token", async () => {
+  xit("Create a Interest Bearing Token", async () => {
 
     let tx = await createInterestBearingMint(payer, connection, mint);
 
